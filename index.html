@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rendimiento Individual - Redpack</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root { 
+            --carbon-bg: #090909; 
+            --carbon-surface: #141414;
+            --guindo: #66001a; 
+            --guindo-light: #990026;
+            --accent: #3b82f6; 
+            --text: #e2e8f0;
+            --border: #2a2a2a;
+            --gold: #c5a059;
+        }
+        
+        body { font-family: 'Lexend', sans-serif; background-color: var(--carbon-bg); margin: 0; color: var(--text); font-size: 13px; }
+
+        .ultra-header {
+            background: linear-gradient(145deg, #111, #1a0007);
+            border-bottom: 2px solid var(--guindo);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .brand .title { font-size: 1.3em; font-weight: 800; color: #fff; margin: 0; letter-spacing: 1px; }
+        .brand .subtitle { font-size: 0.7em; color: var(--gold); display: block; margin-top: -2px; white-space: nowrap; }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.03);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .field { display: flex; flex-direction: column; }
+        .field label { font-size: 0.6em; color: var(--gold); text-transform: uppercase; font-weight: 600; margin-bottom: 2px; }
+
+        select, input[type="file"], input[type="text"] { 
+            background: #000; border: 1px solid #333; color: #fff; 
+            padding: 4px 8px; border-radius: 4px; font-size: 11px; outline: none;
+            height: 28px;
+        }
+        
+        input[type="file"] { width: 220px; } 
+
+        .btn-confirm {
+            background: var(--guindo); color: white; border: 1px solid var(--guindo-light);
+            padding: 0 12px; border-radius: 4px; cursor: pointer;
+            font-weight: 600; font-size: 10px; height: 28px; align-self: flex-end;
+            transition: 0.2s; text-transform: uppercase;
+        }
+        .btn-confirm:hover { background: var(--guindo-light); box-shadow: 0 0 10px var(--guindo); }
+
+        .btn-config {
+            background: #222; border: 1px solid #444; color: #aaa;
+            padding: 0 10px; border-radius: 4px; cursor: pointer;
+            height: 28px; align-self: flex-end; font-size: 14px;
+        }
+        .btn-config:hover { color: var(--gold); border-color: var(--gold); }
+
+        .kpi-container { display: flex; gap: 8px; }
+        .kpi-pill {
+            background: rgba(102, 0, 26, 0.2); border: 1px solid rgba(153, 0, 38, 0.3);
+            padding: 4px 10px; border-radius: 6px; text-align: center; min-width: 60px;
+        }
+        .kpi-label { font-size: 0.55em; color: #aaa; text-transform: uppercase; display: block; }
+        .kpi-val { font-size: 1.1em; font-weight: 600; color: #fff; line-height: 1; }
+
+        /* MODAL DE CONFIGURACIÓN */
+        #modalConfig {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: var(--carbon-surface); border: 1px solid var(--guindo);
+            padding: 20px; border-radius: 12px; width: 380px; max-height: 80vh; overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .modal-content h3 { color: var(--gold); margin-top: 0; font-size: 1.1em; border-bottom: 1px solid #333; padding-bottom: 10px; text-transform: uppercase; }
+        .picker-edit-list { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 15px; }
+        .picker-edit-item { display: flex; gap: 5px; }
+
+        /* TABLAS Y DISEÑO */
+        .main-content { padding: 20px; }
+        .card { background: var(--carbon-surface); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px; overflow: hidden; }
+        .card-header { background: #1a1a1a; padding: 10px 15px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); align-items: center; }
+        
+        .block-totals { display: flex; gap: 12px; font-size: 0.75em; font-weight: 400; }
+        .block-totals span b { color: var(--gold); }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #111; color: #777; font-size: 0.7em; text-transform: uppercase; padding: 10px; text-align: left; }
+        td { padding: 8px 12px; border-bottom: 1px solid #1f1f1f; font-size: 12px; }
+
+        .split-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .row-occupied { background: rgba(102, 0, 26, 0.15); }
+        .copy-btn { background: transparent; border: 1px solid #444; color: #ccc; padding: 4px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: 600; }
+
+        .table-select {
+            background: #0a0a0a; border: 1px solid #444; color: #fff;
+            font-size: 11px; padding: 2px; border-radius: 3px; width: 120px;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="ultra-header">
+        <div class="brand">
+            <h1 class="title">REDPACK</h1>
+            <span class="subtitle">RENDIMIENTO OPERATIVO</span>
+        </div>
+
+        <div class="control-group">
+            <div class="field">
+                <label>Reporte Excel</label>
+                <input type="file" id="excelInput" accept=".xlsx, .xls">
+            </div>
+            <div class="field">
+                <label>Picker</label>
+                <select id="selPicker"></select>
+            </div>
+            <div class="field">
+                <label>Tarea</label>
+                <select id="selTaskType" onchange="toggleTaskInputs()">
+                    <option value="MUELLE">Muelle</option>
+                    <option value="Inyección">Inyección</option>
+                    <option value="Etiquetado">Etiquetado</option>
+                </select>
+            </div>
+            <div id="rangeInputs" style="display:flex; gap:5px;">
+                <div class="field"><label>De</label><select id="selFrom" style="width:50px;" onchange="updateToOptions()"></select></div>
+                <div class="field"><label>A</label><select id="selTo" style="width:50px;"></select></div>
+            </div>
+            <button class="btn-confirm" onclick="assignPicker()">CONFIRMAR</button>
+            <button class="btn-config" onclick="openModal()" title="Configurar Lista de Pickers">⚙️</button>
+        </div>
+
+        <div class="kpi-container">
+            <div class="kpi-pill"><span class="kpi-label">Jornada</span><span id="txtJornada" class="kpi-val" style="color:var(--gold)">-</span></div>
+            <div class="kpi-pill"><span class="kpi-label">Rutas</span><span id="totalIdsCount" class="kpi-val">0</span></div>
+            <div class="kpi-pill"><span class="kpi-label">Paradas</span><span id="grandTotal" class="kpi-val" style="color:var(--guindo-light)">0</span></div>
+            <div class="kpi-pill"><span class="kpi-label">Ops</span><span id="totalPickersAssigned" class="kpi-val">0</span></div>
+        </div>
+
+        <div style="text-align: right; border-left: 1px solid #333; padding-left: 10px;">
+            <span style="font-size: 0.6em; color: var(--gold); display:block; text-transform: uppercase;">Actualizado</span>
+            <span id="txtFecha" style="font-size: 0.9em; font-weight:600; color:#fff">-</span>
+        </div>
+    </header>
+
+    <div id="modalConfig">
+        <div class="modal-content">
+            <h3>Editar Lista de Pickers</h3>
+            <p style="font-size: 10px; color: #888; margin-bottom: 12px;">Los nombres guardados persistirán en este equipo.</p>
+            <div id="editList" class="picker-edit-list"></div>
+            <button class="btn-confirm" onclick="addNewPickerInput()" style="background:#333; margin-bottom: 10px; width:100%">+ AGREGAR PICKER</button>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-confirm" onclick="savePickers()" style="flex:1">GUARDAR</button>
+                <button class="btn-confirm" onclick="closeModal()" style="background:#222; flex:1; border-color:#444">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="card">
+            <div class="card-header">
+                <span style="font-size: 0.8em; font-weight: 600; color: var(--gold); text-transform: uppercase;">Resumen General de Actividades</span>
+                <button class="copy-btn" onclick="copySummaryTable()">📋 COPIAR TABLA</button>
+            </div>
+            <table id="summaryTable">
+                <thead>
+                    <tr>
+                        <th style="width:8px"></th>
+                        <th>Jornada</th>
+                        <th>Fecha</th>
+                        <th>Picker (Cambiar)</th>
+                        <th>Rango / Info</th>
+                        <th>Cajas</th>
+                        <th>Paradas</th>
+                        <th>Proceso</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="summaryBody">
+                    <tr><td colspan="9" style="text-align:center; color:#444; padding:20px">Esperando carga de datos...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="split-layout">
+            <div class="card">
+                <div class="card-header">
+                    <span style="font-size:0.75em; font-weight:600; color:#888; text-transform: uppercase;">BLOQUE A - P</span>
+                    <div class="block-totals">
+                        <span>IDs: <b id="idsLeft">0</b></span>
+                        <span>Muelles: <b id="muellesLeft">0</b></span>
+                    </div>
+                </div>
+                <table>
+                    <thead><tr><th style="width:4px"></th><th>Muelle</th><th>Picker</th><th>IDs</th><th>P.</th></tr></thead>
+                    <tbody id="bodyLeft"></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span style="font-size:0.75em; font-weight:600; color:#888; text-transform: uppercase;">BLOQUE AC - Q</span>
+                    <div class="block-totals">
+                        <span>IDs: <b id="idsRight">0</b></span>
+                        <span>Muelles: <b id="muellesRight">0</b></span>
+                    </div>
+                </div>
+                <table>
+                    <thead><tr><th style="width:4px"></th><th>Muelle</th><th>Picker</th><th>IDs</th><th>P.</th></tr></thead>
+                    <tbody id="bodyRight"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // CARGAR DESDE LOCAL STORAGE O USAR DEFAULT
+    const defaultPickers = ["Alejandro", "Alexis", "Arturo", "Ernesto", "Evelin", "Frank", "Gerardo", "Israel", "Julian", "Karla", "Lupita", "Rebeca", "Samantha", "Samuel", "Wicho", "Antonio"];
+    let allPickers = JSON.parse(localStorage.getItem('redpack_picker_list')) || defaultPickers;
+
+    const colorPalette = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#f97316", "#84cc16", "#a855f7", "#14b8a6", "#fb7185", "#6366f1", "#d946ef", "#eab308", "#2dd4bf", "#4ade80", "#f472b6", "#60a5fa", "#fb923c"];
+    const alphabet = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","AC","AB","AA","Z","Y","X","W","V","U","T","S","R","Q"];
+    
+    let assignments = []; let globalData = {}; let globalParadasTotal = 0; let globalIdsTotal = 0;
+    let currentJornada = "-"; let currentFecha = "-"; let usedColors = [];
+
+    window.onload = () => { updateAllSelects(); renderTables(); };
+
+    /* LÓGICA DE CONFIGURACIÓN (LOCAL STORAGE) */
+    function openModal() {
+        document.getElementById('modalConfig').style.display = 'flex';
+        const list = document.getElementById('editList');
+        list.innerHTML = "";
+        allPickers.forEach((p) => {
+            list.innerHTML += `
+                <div class="picker-edit-item">
+                    <input type="text" value="${p}" class="edit-p-input" style="flex:1">
+                    <button onclick="this.parentElement.remove()" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:16px">✕</button>
+                </div>`;
+        });
+    }
+
+    function addNewPickerInput() {
+        const list = document.getElementById('editList');
+        const div = document.createElement('div');
+        div.className = "picker-edit-item";
+        div.innerHTML = `
+            <input type="text" value="" placeholder="Nuevo Nombre..." class="edit-p-input" style="flex:1">
+            <button onclick="this.parentElement.remove()" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:16px">✕</button>`;
+        list.appendChild(div);
+    }
+
+    function savePickers() {
+        const inputs = document.querySelectorAll('.edit-p-input');
+        const newList = [];
+        inputs.forEach(i => { if(i.value.trim()) newList.push(i.value.trim()); });
+        
+        allPickers = newList;
+        localStorage.setItem('redpack_picker_list', JSON.stringify(allPickers));
+        closeModal();
+        updateAllSelects();
+        renderSummary(); // Refrescar los selects de la tabla
+        alert("Lista de pickers actualizada.");
+    }
+
+    function closeModal() { document.getElementById('modalConfig').style.display = 'none'; }
+
+    /* LÓGICA DE ASIGNACIÓN Y TAREAS */
+    function toggleTaskInputs() {
+        document.getElementById('rangeInputs').style.display = (document.getElementById('selTaskType').value === 'MUELLE') ? 'flex' : 'none';
+    }
+
+    function updateAllSelects() {
+        const pSel = document.getElementById('selPicker');
+        const assignedNames = assignments.map(a => a.picker);
+        pSel.innerHTML = "";
+        allPickers.forEach(p => { if (!assignedNames.includes(p)) pSel.innerHTML += `<option value="${p}">${p}</option>`; });
+
+        const fromSel = document.getElementById('selFrom');
+        const occupiedLetters = assignments.flatMap(a => a.letters || []);
+        fromSel.innerHTML = '<option value="">-</option>';
+        alphabet.forEach(l => { if (!occupiedLetters.includes(l)) fromSel.innerHTML += `<option value="${l}">${l}</option>`; });
+        updateToOptions();
+    }
+
+    function updateToOptions() {
+        const fromVal = document.getElementById('selFrom').value;
+        const toSel = document.getElementById('selTo');
+        const occupiedLetters = assignments.flatMap(a => a.letters || []);
+        toSel.innerHTML = '<option value="">-</option>';
+        if(!fromVal) return;
+        const startIdx = alphabet.indexOf(fromVal);
+        for(let i = startIdx; i < alphabet.length; i++) {
+            if(occupiedLetters.includes(alphabet[i]) && i !== startIdx) break;
+            toSel.innerHTML += `<option value="${alphabet[i]}">${alphabet[i]}</option>`;
+        }
+    }
+
+    document.getElementById('excelInput').addEventListener('change', function(e) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const workbook = XLSX.read(new Uint8Array(evt.target.result), {type: 'array'});
+            processData(XLSX.utils.sheet_to_json(workbook.Sheets["Viajes"]));
+        };
+        reader.readAsArrayBuffer(e.target.files[0]);
+    });
+
+    function processData(rows) {
+        globalData = {}; globalParadasTotal = 0;
+        let uniqueIds = new Set(), jSet = new Set(), fSet = new Set();
+        rows.forEach(row => {
+            if(row["Jornada"]) {
+                const parts = String(row["Jornada"]).split(" - ");
+                if(parts[0]) jSet.add(parts[0].trim());
+                if(parts[1]) fSet.add(parts[1].trim());
+            }
+            const m = String(row["Muelle de salida"] || "").trim();
+            const id = row["ID"], p = parseInt(row["# Paradas"]) || 0;
+            if(m && id) {
+                m.split(/[\s,]+/).filter(Boolean).forEach(l => {
+                    const key = l.toUpperCase();
+                    if(!globalData[key]) globalData[key] = { ids: [], p: 0 };
+                    globalData[key].ids.push(id); globalData[key].p += p;
+                    globalParadasTotal += p; uniqueIds.add(id);
+                });
+            }
+        });
+        currentJornada = jSet.size > 0 ? Array.from(jSet).join(", ") : "-";
+        currentFecha = fSet.size > 0 ? Array.from(fSet).join(", ") : "-";
+        globalIdsTotal = uniqueIds.size;
+        document.getElementById('txtJornada').textContent = currentJornada;
+        document.getElementById('txtFecha').textContent = currentFecha;
+        document.getElementById('grandTotal').textContent = globalParadasTotal;
+        document.getElementById('totalIdsCount').textContent = globalIdsTotal;
+        recalculateSpecialTasks(); renderTables(); renderSummary();
+    }
+
+    function recalculateSpecialTasks() {
+        const injCount = assignments.filter(a => a.type === 'Inyección').length;
+        const etiCount = assignments.filter(a => a.type === 'Etiquetado').length;
+        assignments.forEach(a => {
+            if(a.type === 'Inyección') { a.paradas = Math.floor(globalParadasTotal / (injCount || 1)); a.ids = Math.floor(globalIdsTotal / (injCount || 1)); }
+            if(a.type === 'Etiquetado') { a.paradas = Math.floor(globalParadasTotal / (etiCount || 1)); a.ids = Math.floor(globalIdsTotal / (etiCount || 1)); }
+        });
+    }
+
+    function assignPicker() {
+        const p = document.getElementById('selPicker').value;
+        const taskType = document.getElementById('selTaskType').value;
+        if(!p) return alert("Selecciona un Picker");
+        const color = colorPalette.find(c => !usedColors.includes(c)) || "#555";
+        usedColors.push(color);
+        let newAss = { picker: p, type: taskType, color: color, ids: 0, paradas: 0, letters: [], display: taskType, jornada: currentJornada, fecha: currentFecha };
+        if(taskType === 'MUELLE') {
+            const f = document.getElementById('selFrom').value, t = document.getElementById('selTo').value;
+            if(!f || !t) return alert("Rango inválido");
+            const range = alphabet.slice(alphabet.indexOf(f), alphabet.indexOf(t) + 1);
+            let idsSet = new Set();
+            range.forEach(l => { if(globalData[l]) { globalData[l].ids.forEach(id => idsSet.add(id)); newAss.paradas += globalData[l].p; } });
+            newAss.letters = range; newAss.ids = idsSet.size; newAss.display = `${f} - ${t}`;
+        }
+        assignments.push(newAss); recalculateSpecialTasks(); updateAllSelects(); renderTables(); renderSummary();
+        document.getElementById('totalPickersAssigned').textContent = assignments.length;
+    }
+
+    function changePickerInSummary(idx, newName) {
+        assignments[idx].picker = newName;
+        renderTables();
+        renderSummary();
+        updateAllSelects();
+    }
+
+    function removeAss(idx) {
+        usedColors = usedColors.filter(c => c !== assignments[idx].color);
+        assignments.splice(idx, 1); recalculateSpecialTasks(); updateAllSelects(); renderTables(); renderSummary();
+        document.getElementById('totalPickersAssigned').textContent = assignments.length;
+    }
+
+    function renderSummary() {
+        const body = document.getElementById('summaryBody');
+        if(assignments.length === 0) { body.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#444; padding:20px">Sin datos...</td></tr>'; return; }
+        body.innerHTML = "";
+        const assignedNames = assignments.map(a => a.picker);
+        assignments.forEach((a, idx) => {
+            let pickerOptions = "";
+            allPickers.forEach(p => {
+                if (!assignedNames.includes(p) || p === a.picker) {
+                    pickerOptions += `<option value="${p}" ${p === a.picker ? 'selected' : ''}>${p}</option>`;
+                }
+            });
+            body.innerHTML += `<tr>
+                <td style="background-color:${a.color}"></td>
+                <td style="color:#666">${a.jornada}</td>
+                <td style="color:#666">${a.fecha}</td>
+                <td><select class="table-select" onchange="changePickerInSummary(${idx}, this.value)" style="color:${a.color}; font-weight:bold">${pickerOptions}</select></td>
+                <td>${a.display}</td>
+                <td>${a.letters.length || '-'}</td>
+                <td style="color:var(--accent); font-weight:600">${a.ids}</td>
+                <td style="color:var(--guindo-light); font-weight:600">${a.paradas}</td>
+                <td style="font-weight:600; color:var(--gold)">${a.type}</td>
+                <td><button onclick="removeAss(${idx})" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-weight:bold">✕</button></td>
+            </tr>`;
+        });
+    }
+
+    function renderTables() {
+        let leftIds = new Set(), leftMuelles = 0;
+        let rightIds = new Set(), rightMuelles = 0;
+        const draw = (tbodyId, range, isLeft) => {
+            const tbody = document.getElementById(tbodyId); tbody.innerHTML = "";
+            range.forEach(l => {
+                const d = globalData[l] || { ids: [], p: 0 }, ass = assignments.find(a => (a.letters || []).includes(l));
+                if(d.ids.length > 0) { if(isLeft) { d.ids.forEach(id => leftIds.add(id)); leftMuelles++; } else { d.ids.forEach(id => rightIds.add(id)); rightMuelles++; } }
+                const tr = document.createElement('tr'); if(ass) tr.className = "row-occupied";
+                tr.innerHTML = `<td style="background-color:${ass ? ass.color : 'transparent'}"></td>
+                    <td><b>${l}</b></td>
+                    <td style="color:${ass ? ass.color : '#444'}; font-weight:600">${ass ? ass.picker : '-'}</td>
+                    <td style="color:#555">${d.ids.length}</td>
+                    <td style="text-align:right; font-weight:600">${d.p}</td>`;
+                tbody.appendChild(tr);
+            });
+        };
+        draw('bodyLeft', alphabet.slice(0, 16), true);
+        draw('bodyRight', alphabet.slice(16), false);
+        document.getElementById('idsLeft').textContent = leftIds.size;
+        document.getElementById('muellesLeft').textContent = leftMuelles;
+        document.getElementById('idsRight').textContent = rightIds.size;
+        document.getElementById('muellesRight').textContent = rightMuelles;
+    }
+
+    function copySummaryTable() {
+        let text = "JORNADA\tFECHA\tPICKER\tRANGO\tIDS\tPARADAS\tPROCESO\n";
+        assignments.forEach(a => { text += `${a.jornada}\t${a.fecha}\t${a.picker}\t${a.display}\t${a.ids}\t${a.paradas}\t${a.type}\n`; });
+        navigator.clipboard.writeText(text).then(() => alert("Copiado"));
+    }
+</script>
+</body>
+</html>
