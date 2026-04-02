@@ -192,7 +192,7 @@
                         <th>Rango / Info</th>
                         <th>Cajas</th>
                         <th>Paradas</th>
-                        <th>Proceso</th>
+                        <th>Paquetes</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -449,7 +449,7 @@
     }
 
     function copySummaryTable() {
-        let text = "JORNADA\tFECHA\tPICKER\tRANGO\tIDS\tPARADAS\tPROCESO\n";
+        let text = "JORNADA\tFECHA\tPICKER\tRANGO\tIDS\tPARADAS\tPAQUETES\n";
         assignments.forEach(a => { text += `${a.jornada}\t${a.fecha}\t${a.picker}\t${a.display}\t${a.ids}\t${a.paradas}\t${a.type}\n`; });
         navigator.clipboard.writeText(text).then(() => alert("Copiado"));
     }
