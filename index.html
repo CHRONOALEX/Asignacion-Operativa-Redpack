@@ -200,7 +200,7 @@
                         <th>Fecha</th>
                         <th>Turno</th>
                         <th>Picker</th>
-                        <th>Rango</th>
+                        <th>Muelle(s)</th>
                         <th>Rutas</th>
                         <th>Paradas</th>
                         <th>Proceso</th>
@@ -309,7 +309,7 @@
         usedColors.push(color);
         let newAss = { 
             picker: pickerName, shift: shiftName, type: 'MUELLE', color: color, 
-            ids: 0, paradas: 0, letters: range, display: `${range[0]} - ${range[range.length-1]}`, 
+            ids: 0, paradas: 0, letters: range, display: range.join(", "), 
             jornada: currentJornada, fecha: currentFecha 
         };
         let idsSet = new Set();
@@ -410,7 +410,7 @@
             if(!f || !t) return alert("Rango inválido");
             const range = alphabet.slice(alphabet.indexOf(f), alphabet.indexOf(t) + 1);
             let idsSet = new Set(); range.forEach(l => { if(globalData[l]) { globalData[l].ids.forEach(id => idsSet.add(id)); newAss.paradas += globalData[l].p; } });
-            newAss.letters = range; newAss.ids = idsSet.size; newAss.display = `${f} - ${t}`;
+            newAss.letters = range; newAss.ids = idsSet.size; newAss.display = range.join(", ");
         }
         assignments.push(newAss); recalculateSpecialTasks(); updateAllSelects(); renderTables(); renderSummary();
     }
@@ -471,7 +471,7 @@
     }
 
     function copySummaryTable() {
-        let text = "JORNADA\tFECHA\tTURNO\tPICKER\tRANGO\tIDS\tPARADAS\tPROCESO\n";
+        let text = "JORNADA\tFECHA\tTURNO\tPICKER\tMUELLES\tIDS\tPARADAS\tPROCESO\n";
         assignments.forEach(a => { text += `${a.jornada}\t${a.fecha}\t${a.shift}\t${a.picker}\t${a.display}\t${a.ids}\t${a.paradas}\t${a.type}\n`; });
         navigator.clipboard.writeText(text).then(() => {
             const btn = document.querySelector('.copy-btn');
