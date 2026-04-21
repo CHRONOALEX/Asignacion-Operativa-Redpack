@@ -144,7 +144,7 @@
             <div class="field">
                 <label>Tarea</label>
                 <select id="selTaskType" onchange="toggleTaskInputs()">
-                    <option value="MUELLE">Muelle</option>
+                    <option value="Muelle">Muelle</option>
                     <option value="Inyección">Inyección</option>
                     <option value="Etiquetado">Etiquetado</option>
                 </select>
@@ -239,7 +239,9 @@
     const defaultPickers = ["Alejandra", "Alejandro", "Alexis", "Arturo", "Ernesto", "Evelin", "Frank", "Gerardo", "Israel", "Julian", "Karla", "Lupita", "Rebeca", "Samantha", "Samuel", "Wicho", "Antonio"];
     let allPickers = JSON.parse(localStorage.getItem('redpack_picker_list')) || defaultPickers;
     const colorPalette = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#f97316", "#84cc16", "#a855f7", "#14b8a6", "#fb7185", "#6366f1", "#d946ef", "#eab308", "#2dd4bf", "#4ade80", "#f472b6", "#60a5fa", "#fb923c"];
-    const alphabet = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","AC","AB","AA","Z","Y","X","W","V","U","T","S","R","Q"];
+    
+    // Se agrega "QP" al final del alfabeto para que sea seleccionable
+    const alphabet = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","AC","AB","AA","Z","Y","X","W","V","U","T","S","R","Q", "QP"];
     
     let assignments = []; let globalData = {}; let globalParadasTotal = 0; let globalIdsTotal = 0;
     let currentJornada = "-"; let currentFecha = "-"; let usedColors = [];
@@ -270,7 +272,9 @@
     }
 
     function toggleSelection(tr) {
-        const letter = tr.querySelector('b').textContent;
+        const bTag = tr.querySelector('b');
+        if (!bTag) return;
+        const letter = bTag.textContent;
         if (!selectedLetters.includes(letter)) {
             selectedLetters.push(letter); tr.classList.add('row-selecting');
         } else if (selectedLetters.length > 1 && selectedLetters[selectedLetters.length-1] !== letter) {
@@ -369,16 +373,37 @@
 
     function processData(rows) {
         globalData = {}; globalParadasTotal = 0; let uniqueIds = new Set(), jSet = new Set(), fSet = new Set();
+        
         rows.forEach(row => {
             if(row["Jornada"]) { const parts = String(row["Jornada"]).split(" - "); if(parts[0]) jSet.add(parts[0].trim()); if(parts[1]) fSet.add(parts[1].trim()); }
-            const m = String(row["Muelle de salida"] || "").trim(); const id = row["ID"], p = parseInt(row["# Paradas"]) || 0;
-            if(m && id) {
-                m.split(/[\s,]+/).filter(Boolean).forEach(l => {
-                    const key = l.toUpperCase(); if(!globalData[key]) globalData[key] = { ids: [], p: 0 };
-                    globalData[key].ids.push(id); globalData[key].p += p; globalParadasTotal += p; uniqueIds.add(id);
+            
+            const id = row["ID"];
+            const p = parseInt(row["# Paradas"]) || 0;
+            const conductor = String(row["Conductor"] || "").trim();
+            let muellesEfectivos = [];
+
+            // LÓGICA QP: Si el conductor coincide, forzamos el muelle a "QP"
+            if (conductor === "CONDUCTOR QP CONDUCTOR QP") {
+                muellesEfectivos = ["QP"];
+            } else {
+                const m = String(row["Muelle de salida"] || "").trim();
+                if(m) {
+                    muellesEfectivos = m.split(/[\s,]+/).filter(Boolean);
+                }
+            }
+
+            if(id && muellesEfectivos.length > 0) {
+                muellesEfectivos.forEach(l => {
+                    const key = l.toUpperCase(); 
+                    if(!globalData[key]) globalData[key] = { ids: [], p: 0 };
+                    globalData[key].ids.push(id); 
+                    globalData[key].p += p; 
+                    globalParadasTotal += p; 
+                    uniqueIds.add(id);
                 });
             }
         });
+
         currentJornada = Array.from(jSet).join(", ") || "-"; 
         currentFecha = Array.from(fSet).join(", ") || "-";
         globalIdsTotal = uniqueIds.size; document.getElementById('txtJornada').textContent = currentJornada;
@@ -465,7 +490,10 @@
                 tbody.appendChild(tr);
             });
         };
-        draw('bodyLeft', alphabet.slice(0, 16), true); draw('bodyRight', alphabet.slice(16), false);
+        // Se ajustan los slices para incluir el nuevo elemento "QP" si fuera necesario visualizarlo
+        draw('bodyLeft', alphabet.slice(0, 16), true); 
+        draw('bodyRight', alphabet.slice(16), false);
+        
         document.getElementById('idsLeft').textContent = leftIds.size; document.getElementById('muellesLeft').textContent = leftMuelles;
         document.getElementById('idsRight').textContent = rightIds.size; document.getElementById('muellesRight').textContent = rightMuelles;
     }
