@@ -137,7 +137,7 @@
                 <select id="selShift">
                     <option value="Día">Día</option>
                     <option value="Tarde">Tarde</option>
-                    <option value="Noche">Noche</option>
+                    <option value="Noche" selected>Noche</option>
                 </select>
             </div>
             <div class="field"><label>Picker</label><select id="selPicker"></select></div>
@@ -405,7 +405,13 @@
         currentFecha = Array.from(fSet).join(", ") || "-";
         globalIdsTotal = uniqueIds.size; document.getElementById('txtJornada').textContent = currentJornada;
         document.getElementById('grandTotal').textContent = globalParadasTotal;
-        document.getElementById('totalIdsCount').textContent = globalIdsTotal; renderTables(); renderSummary();
+        document.getElementById('totalIdsCount').textContent = globalIdsTotal;
+        
+        // Seteo automático de paquetes procesados
+        document.getElementById('numProcesados').value = globalParadasTotal;
+        validateReady();
+
+        renderTables(); renderSummary();
     }
 
     function assignPicker() {
