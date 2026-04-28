@@ -21,7 +21,6 @@
         
         body { font-family: 'Lexend', sans-serif; background-color: var(--carbon-bg); margin: 0; color: var(--text); font-size: 13px; }
 
-        /* Header optimizado para espacio */
         .ultra-header {
             background: linear-gradient(145deg, #111, #1a0007);
             border-bottom: 2px solid var(--guindo);
@@ -203,6 +202,7 @@
                         <th>Muelle(s)</th>
                         <th>Rutas</th>
                         <th>Paquetes</th>
+                        <th style="color:var(--gold)">T. Turno</th>
                         <th>Prod. Real</th>
                         <th>% Rend</th>
                         <th>Proceso</th>
@@ -407,7 +407,6 @@
         document.getElementById('grandTotal').textContent = globalParadasTotal;
         document.getElementById('totalIdsCount').textContent = globalIdsTotal;
         
-        // Seteo automático de paquetes procesados
         document.getElementById('numProcesados').value = globalParadasTotal;
         validateReady();
 
@@ -444,7 +443,7 @@
         const body = document.getElementById('summaryBody');
         const totalRealCaja = parseFloat(document.getElementById('numProcesados').value) || 0;
         
-        if(assignments.length === 0) { body.innerHTML = '<tr><td colspan="12" style="text-align:center; color:#444; padding:20px">Sin datos...</td></tr>'; return; }
+        if(assignments.length === 0) { body.innerHTML = '<tr><td colspan="13" style="text-align:center; color:#444; padding:20px">Sin datos...</td></tr>'; return; }
         body.innerHTML = "";
         const assignedNames = assignments.map(a => a.picker);
         const injCount = assignments.filter(a => a.type === 'Inyección').length;
@@ -478,6 +477,7 @@
                 <td style="font-weight:bold">${a.display}</td>
                 <td style="color:var(--accent); font-weight:600">${a.type === 'MUELLE' ? a.ids : '-'}</td>
                 <td style="color:var(--guindo-light); font-weight:600">${a.type === 'MUELLE' ? a.paradas : '-'}</td>
+                <td style="color:var(--gold); font-weight:bold; text-align:center">${totalRealCaja}</td>
                 <td style="color:#fff; font-weight:bold; background: rgba(59,130,246,0.1); text-align:center;">${produccionRealMostrada}</td>
                 <td style="color:var(--gold); font-weight:bold; text-align:center">${porcentajeDesempeño}%</td>
                 <td style="font-weight:600; color:#aaa">${a.type}</td>
@@ -510,7 +510,7 @@
     }
 
     function copySummaryTable() {
-        let text = ""; // Sin encabezados
+        let text = ""; 
         const totalRealCaja = parseFloat(document.getElementById('numProcesados').value) || 0;
         const injCount = assignments.filter(a => a.type === 'Inyección').length;
         const etiCount = assignments.filter(a => a.type === 'Etiquetado').length;
@@ -527,11 +527,10 @@
                 }
                 pct = ((real / totalRealCaja) * 100).toFixed(1);
             }
-            // Agrega solo las filas de datos
-            text += `${a.jornada}\t${a.fecha}\t${a.shift}\t${a.picker}\t${a.display}\t${a.ids}\t${a.paradas}\t${real}\t${pct}%\t${a.type}\n`; 
+            text += `${a.jornada}\t${a.fecha}\t${a.shift}\t${a.picker}\t${a.display}\t${a.ids}\t${a.paradas}\t${totalRealCaja}\t${real}\t${pct}%\t${a.type}\n`; 
         });
         
-        if (text === "") return; // No copiar nada si no hay datos
+        if (text === "") return; 
 
         navigator.clipboard.writeText(text).then(() => {
             const btn = document.querySelector('.copy-btn');
